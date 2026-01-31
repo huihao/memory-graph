@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import ArticleList from './components/ArticleList'
-import KnowledgeGraph from './components/KnowledgeGraph'
+import KnowledgeGraph from './components/KnowledgeGraphNew'
 import Dashboard from './components/Dashboard'
 import axios from 'axios'
 
