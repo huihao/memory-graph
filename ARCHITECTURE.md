@@ -229,7 +229,11 @@ POST /api/tasks/convert-to-markdown
 - Includes frontmatter with metadata
 - Preserves relationships through links
 
-### 5. Search & Filter
+### 5. Notion / Obsidian / Neo4j Integration
+
+The integration plan positions Neo4j as the source of truth, Obsidian as the writing surface, and Notion as the execution layer. See [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md) for the full architecture, sync rules, and conflict-resolution strategy.
+
+### 6. Search & Filter
 - Full-text search across articles
 - Filter by domain
 - Filter by knowledge point

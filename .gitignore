@@ -36,6 +36,7 @@ yarn.lock
 dist/
 build/
 *.zip
+frontend/dist/
 
 # IDE
 .vscode/
@@ -64,3 +65,4 @@ logs/
 # Obsidian exports
 exports/
 obsidian-vault/
+/tmp/obsidian-vault/

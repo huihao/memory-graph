@@ -8,6 +8,7 @@ This guide will help you set up all components of the Memory Graph system.
 - Node.js 16+ and npm installed
 - A modern web browser (Chrome or Firefox)
 - (Optional) OpenAI API key for enhanced article analysis
+- (Optional) Neo4j instance, Notion API access, and Obsidian vault path for integration sync
 
 ## Step-by-Step Setup
 
@@ -106,6 +107,12 @@ The frontend should now be running at `http://localhost:3000`
 2. Click "Convert All to Markdown"
 3. Find the exported markdown files in `backend/exports/`
 4. Copy these files to your Obsidian vault
+
+#### Syncing to Neo4j / Notion / Obsidian Drafts:
+
+1. Configure integration variables in `.env` (see `.env.example`)
+2. Ensure Neo4j is running and the Notion API token has access to the inbox database
+3. Call `POST /api/sync/full-pipeline?article_id={id}` to sync a processed article
 
 ## Troubleshooting
 

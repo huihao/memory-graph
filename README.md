@@ -103,6 +103,12 @@ The frontend will be available at `http://localhost:3000`
 3. Filter by a specific domain or knowledge point to focus the graph
 4. Pan/zoom the canvas and click article nodes to open their URLs
 
+### 5. Notion / Obsidian / Neo4j Integration
+
+See [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md) for a
+practical, layered integration design that positions Neo4j as the source of truth, Obsidian as the
+writing surface, and Notion as the execution dashboard.
+
 ## 🔧 API Endpoints
 
 ### Articles
@@ -156,6 +162,9 @@ memory-graph/
 ### Backend
 
 - `OPENAI_API_KEY` - OpenAI API key for enhanced article analysis (optional)
+- `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` - Neo4j connection settings (optional)
+- `NOTION_API_KEY` / `NOTION_INBOX_DB_ID` - Notion integration settings (optional)
+- `OBSIDIAN_VAULT_PATH` - Obsidian vault path for drafts export (optional)
 
 If not provided, the system will use simple keyword-based analysis as fallback.
 
@@ -195,7 +204,7 @@ MIT License
 - [ ] Article summarization
 - [ ] Duplicate detection
 - [ ] Tag management
-- [ ] Export to other formats (Notion, Roam Research, etc.)
+- [ ] Notion / Obsidian / Neo4j integration tooling (sync workers, webhooks, CLI)
 - [ ] Scheduled bookmark processing
 - [ ] Browser extension for Firefox
 - [ ] Mobile app support
