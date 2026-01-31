@@ -5,6 +5,9 @@ from typing import List, Dict, Optional, Iterable, Tuple, Set
 from sqlalchemy.orm import Session
 from database import Article, Domain, KnowledgePoint
 
+MAX_TITLE_LENGTH = 100
+MAX_RELATED_ARTICLES = 10
+
 class MarkdownConverter:
     """Service for converting articles to Obsidian markdown format"""
     
@@ -39,8 +42,8 @@ class MarkdownConverter:
     
     def _safe_title(self, article: Article) -> str:
         safe_title = "".join(c for c in article.title if c.isalnum() or c in (" ", "-", "_")).rstrip()
-        safe_title = safe_title[:100] if safe_title else f"article-{article.id}"
-        return safe_title
+        safe_title = safe_title[:MAX_TITLE_LENGTH].rstrip()
+        return safe_title if safe_title else f"article-{article.id}"
 
     def _format_wiki_link(self, article: Article) -> str:
         safe_title = self._safe_title(article)
@@ -49,10 +52,7 @@ class MarkdownConverter:
         return f"[[{safe_title}|{article.title}]]"
 
     def _dedupe_articles(self, articles: Iterable[Article]) -> List[Article]:
-        deduped = {}
-        for related in articles:
-            if related.id not in deduped:
-                deduped[related.id] = related
+        deduped = {article.id: article for article in articles}
         return list(deduped.values())
 
     def _collect_related_articles(self, article: Article) -> Dict[str, List[Article]]:
@@ -68,8 +68,8 @@ class MarkdownConverter:
             for related in kp.articles
             if related.id != article.id
         )
-        domain_ids = {a.id for a in related_by_domain}
-        related_by_kp = [related for related in related_by_kp if related.id not in domain_ids]
+        related_domain_article_ids = {a.id for a in related_by_domain}
+        related_by_kp = [related for related in related_by_kp if related.id not in related_domain_article_ids]
         return {
             "by_domain": related_by_domain,
             "by_knowledge_point": related_by_kp,
@@ -114,12 +114,12 @@ class MarkdownConverter:
             lines.append("## Related Articles")
             if related["by_domain"]:
                 lines.append("### Same Domain")
-                for related_article in related["by_domain"][:10]:
+                for related_article in related["by_domain"][:MAX_RELATED_ARTICLES]:
                     lines.append(f"- {self._format_wiki_link(related_article)}")
                 lines.append("")
             if related["by_knowledge_point"]:
                 lines.append("### Same Knowledge Points")
-                for related_article in related["by_knowledge_point"][:10]:
+                for related_article in related["by_knowledge_point"][:MAX_RELATED_ARTICLES]:
                     lines.append(f"- {self._format_wiki_link(related_article)}")
                 lines.append("")
         
@@ -204,8 +204,8 @@ class KnowledgeGraphService:
                 if related_article.id != article_id:
                     related_by_kp.add(related_article)
 
-        domain_ids = {related.id for related in related_by_domain}
-        related_by_kp = {related for related in related_by_kp if related.id not in domain_ids}
+        related_domain_article_ids = {related.id for related in related_by_domain}
+        related_by_kp = {related for related in related_by_kp if related.id not in related_domain_article_ids}
         
         return {
             "by_domain": list(related_by_domain),
@@ -294,9 +294,14 @@ class KnowledgeGraphService:
             for article in domain.articles:
                 add_edge(f"article_{article.id}", f"domain_{domain.id}", "belongs_to")
             domain_articles = list(domain.articles)
-            for idx in range(len(domain_articles)):
-                for other_idx in range(idx + 1, len(domain_articles)):
-                    add_article_relation(domain_articles[idx], domain_articles[other_idx], "domains", domain.name)
+            for first_index in range(len(domain_articles)):
+                for second_index in range(first_index + 1, len(domain_articles)):
+                    add_article_relation(
+                        domain_articles[first_index],
+                        domain_articles[second_index],
+                        "domains",
+                        domain.name
+                    )
         
         # Add knowledge point nodes
         for kp in knowledge_points:
@@ -312,9 +317,14 @@ class KnowledgeGraphService:
             for article in kp.articles:
                 add_edge(f"article_{article.id}", f"kp_{kp.id}", "covers")
             kp_articles = list(kp.articles)
-            for idx in range(len(kp_articles)):
-                for other_idx in range(idx + 1, len(kp_articles)):
-                    add_article_relation(kp_articles[idx], kp_articles[other_idx], "knowledge_points", kp.name)
+            for first_index in range(len(kp_articles)):
+                for second_index in range(first_index + 1, len(kp_articles)):
+                    add_article_relation(
+                        kp_articles[first_index],
+                        kp_articles[second_index],
+                        "knowledge_points",
+                        kp.name
+                    )
 
         for (source_id, target_id), relation_data in article_edge_map.items():
             edges.append({

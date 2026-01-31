@@ -221,6 +221,12 @@ code {
   font-size: 13px;
 }
 
+.graph-filter-note {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
 .graph-legend {
   display: flex;
   gap: 16px;

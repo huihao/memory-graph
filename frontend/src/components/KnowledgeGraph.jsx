@@ -16,7 +16,7 @@ const NODE_RADIUS = {
 function KnowledgeGraph({ apiUrl }) {
   const [graphData, setGraphData] = useState({ nodes: [], edges: [], context: {} })
   const [loading, setLoading] = useState(true)
-  const [draggingNode, setDraggingNode] = useState(null)
+  const [draggedNode, setDraggedNode] = useState(null)
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   const [filters, setFilters] = useState({ domainId: '', knowledgePointId: '' })
   const [domains, setDomains] = useState([])
@@ -43,7 +43,7 @@ function KnowledgeGraph({ apiUrl }) {
     if (graphData.nodes.length > 0) {
       applyLayout()
     }
-  }, [graphData])
+  }, [graphData.nodes.length])
 
   const loadFilters = async () => {
     try {
@@ -96,18 +96,23 @@ function KnowledgeGraph({ apiUrl }) {
     const pos = getCanvasPosition(event)
     const node = getNodeAtPosition(pos.x, pos.y)
     if (node) {
-      setDraggingNode(node)
+      setDraggedNode(node)
     } else {
       dragStartRef.current = { x: event.clientX, y: event.clientY }
     }
   }
 
   const handleMouseMove = (event) => {
-    if (draggingNode) {
+    if (draggedNode) {
       const pos = getCanvasPosition(event)
-      draggingNode.x = pos.x
-      draggingNode.y = pos.y
-      drawGraph()
+      const updatedNode = { ...draggedNode, x: pos.x, y: pos.y }
+      setDraggedNode(updatedNode)
+      setGraphData(prev => ({
+        ...prev,
+        nodes: prev.nodes.map(node => (
+          node.id === draggedNode.id ? updatedNode : node
+        ))
+      }))
       return
     }
     if (!dragStartRef.current) return
@@ -118,7 +123,7 @@ function KnowledgeGraph({ apiUrl }) {
   }
 
   const handleMouseUp = () => {
-    setDraggingNode(null)
+    setDraggedNode(null)
     dragStartRef.current = null
   }
 
@@ -143,7 +148,7 @@ function KnowledgeGraph({ apiUrl }) {
     setTransform({ x: 0, y: 0, scale: 1 })
   }
 
-  const applyLayout = () => {
+  const applyLayout = (skipDraw = false) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const width = canvas.width
@@ -159,25 +164,33 @@ function KnowledgeGraph({ apiUrl }) {
     const kpRadius = Math.min(width, height) * 0.18
     const articleRadius = Math.min(width, height) * 0.38
 
-    domainNodes.forEach((node, index) => {
-      const angle = (index / Math.max(domainNodes.length, 1)) * 2 * Math.PI
-      node.x = centerX + Math.cos(angle) * domainRadius
-      node.y = centerY + Math.sin(angle) * domainRadius
-    })
+    if (domainNodes.length > 0) {
+      domainNodes.forEach((node, index) => {
+        const angle = (index / domainNodes.length) * 2 * Math.PI
+        node.x = centerX + Math.cos(angle) * domainRadius
+        node.y = centerY + Math.sin(angle) * domainRadius
+      })
+    }
 
-    kpNodes.forEach((node, index) => {
-      const angle = (index / Math.max(kpNodes.length, 1)) * 2 * Math.PI
-      node.x = centerX + Math.cos(angle) * kpRadius
-      node.y = centerY + Math.sin(angle) * kpRadius
-    })
+    if (kpNodes.length > 0) {
+      kpNodes.forEach((node, index) => {
+        const angle = (index / kpNodes.length) * 2 * Math.PI
+        node.x = centerX + Math.cos(angle) * kpRadius
+        node.y = centerY + Math.sin(angle) * kpRadius
+      })
+    }
 
-    articleNodes.forEach((node, index) => {
-      const angle = (index / Math.max(articleNodes.length, 1)) * 2 * Math.PI
-      node.x = centerX + Math.cos(angle) * articleRadius
-      node.y = centerY + Math.sin(angle) * articleRadius
-    })
+    if (articleNodes.length > 0) {
+      articleNodes.forEach((node, index) => {
+        const angle = (index / articleNodes.length) * 2 * Math.PI
+        node.x = centerX + Math.cos(angle) * articleRadius
+        node.y = centerY + Math.sin(angle) * articleRadius
+      })
+    }
 
-    drawGraph()
+    if (!skipDraw) {
+      drawGraph()
+    }
   }
 
   const drawGraph = () => {
@@ -193,6 +206,7 @@ function KnowledgeGraph({ apiUrl }) {
     ctx.scale(transform.scale, transform.scale)
 
     if (!graphData.nodes.every(node => node.x !== undefined)) {
+      applyLayout(true)
       return
     }
 
@@ -250,6 +264,7 @@ function KnowledgeGraph({ apiUrl }) {
           <label>Domain</label>
           <select
             value={filters.domainId}
+            title="Selecting a domain resets the knowledge point filter."
             onChange={(event) => setFilters({ domainId: event.target.value, knowledgePointId: '' })}
           >
             <option value="">All domains</option>
@@ -262,6 +277,7 @@ function KnowledgeGraph({ apiUrl }) {
           <label>Knowledge Point</label>
           <select
             value={filters.knowledgePointId}
+            title="Selecting a knowledge point resets the domain filter."
             onChange={(event) => setFilters({ domainId: '', knowledgePointId: event.target.value })}
           >
             <option value="">All knowledge points</option>
@@ -275,6 +291,7 @@ function KnowledgeGraph({ apiUrl }) {
           <button onClick={resetView}>🧭 Reset View</button>
         </div>
       </div>
+      <div className="graph-filter-note">Choose a domain or knowledge point to focus the graph (selecting one clears the other).</div>
 
       {graphData.context?.domain && (
         <div className="graph-context">Current domain: {graphData.context.domain}</div>
@@ -294,7 +311,7 @@ function KnowledgeGraph({ apiUrl }) {
           onMouseLeave={handleMouseUp}
           onClick={handleClick}
           onWheel={handleWheel}
-          style={{ width: '100%', height: '100%', cursor: draggingNode ? 'grabbing' : 'grab' }}
+          style={{ width: '100%', height: '100%', cursor: draggedNode ? 'grabbing' : 'grab' }}
         />
       </div>
 

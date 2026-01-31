@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 import openai
 import json
 
+MAX_EXISTING_HINTS = 50  # Limit to keep LLM prompts concise
+
 class LLMService:
     """Service for interacting with Large Language Models"""
     
@@ -30,10 +32,10 @@ class LLMService:
         Returns:
             Dictionary with 'domains' and 'knowledge_points' lists
         """
-        existing_domains = existing_domains or []
-        existing_knowledge_points = existing_knowledge_points or []
-        domain_hint = ", ".join(existing_domains)
-        knowledge_point_hint = ", ".join(existing_knowledge_points)
+        existing_domains = (existing_domains or [])[:MAX_EXISTING_HINTS]
+        existing_knowledge_points = (existing_knowledge_points or [])[:MAX_EXISTING_HINTS]
+        domain_hint = ", ".join(existing_domains) if existing_domains else "None"
+        knowledge_point_hint = ", ".join(existing_knowledge_points) if existing_knowledge_points else "None"
         prompt = f"""
         Analyze the following article and extract:
         1. The main domain(s) or field(s) it belongs to (e.g., "Machine Learning", "Web Development", "Cloud Computing")
