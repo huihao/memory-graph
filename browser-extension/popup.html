@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Memory Graph</title>
+    <style>
+        body {
+            width: 400px;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            font-size: 18px;
+            margin: 0 0 15px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #f0f0f0;
+        }
+        .status.processing {
+            background: #fff3cd;
+        }
+        .status.success {
+            background: #d4edda;
+        }
+        .status.error {
+            background: #f8d7da;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .progress {
+            margin: 10px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s;
+        }
+        .stats {
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .settings {
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .settings input {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📚 Memory Graph</h1>
+    
+    <div class="settings">
+        <label>Backend URL:</label>
+        <input type="text" id="backendUrl" placeholder="http://localhost:8000">
+    </div>
+    
+    <div class="stats">
+        <div>Total Bookmarks: <span id="totalBookmarks">-</span></div>
+        <div>Processed: <span id="processedCount">0</span></div>
+    </div>
+    
+    <div class="progress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+    </div>
+    
+    <div class="status" id="status">
+        Ready to process bookmarks
+    </div>
+    
+    <button id="processAll">Process All Bookmarks</button>
+    <button id="processFolder">Process Current Folder</button>
+    <button id="stopProcessing" disabled>Stop Processing</button>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
