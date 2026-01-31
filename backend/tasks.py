@@ -2,8 +2,14 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict
-from sqlalchemy.orm import Session
-from database import Article, Domain, KnowledgePoint
+from sqlalchemy.orm import Session, load_only
+from database import (
+    Article,
+    Domain,
+    KnowledgePoint,
+    article_domains,
+    article_knowledge_points,
+)
 
 class MarkdownConverter:
     """Service for converting articles to Obsidian markdown format"""
@@ -165,9 +171,13 @@ class KnowledgeGraphService:
         Returns:
             Dictionary with nodes and edges for graph visualization
         """
-        articles = db.query(Article).all()
-        domains = db.query(Domain).all()
-        knowledge_points = db.query(KnowledgePoint).all()
+        articles = db.query(Article).options(
+            load_only(Article.id, Article.title, Article.url)
+        ).all()
+        domains = db.query(Domain).options(load_only(Domain.id, Domain.name)).all()
+        knowledge_points = db.query(KnowledgePoint).options(
+            load_only(KnowledgePoint.id, KnowledgePoint.name)
+        ).all()
         
         nodes = []
         edges = []
@@ -189,13 +199,15 @@ class KnowledgeGraphService:
                 "type": "domain"
             })
             
-            # Add edges between articles and domains
-            for article in domain.articles:
-                edges.append({
-                    "source": f"article_{article.id}",
-                    "target": f"domain_{domain.id}",
-                    "type": "belongs_to"
-                })
+        # Add edges between articles and domains
+        for article_id, domain_id in db.query(
+            article_domains.c.article_id, article_domains.c.domain_id
+        ).all():
+            edges.append({
+                "source": f"article_{article_id}",
+                "target": f"domain_{domain_id}",
+                "type": "belongs_to"
+            })
         
         # Add knowledge point nodes
         for kp in knowledge_points:
@@ -205,13 +217,16 @@ class KnowledgeGraphService:
                 "type": "knowledge_point"
             })
             
-            # Add edges between articles and knowledge points
-            for article in kp.articles:
-                edges.append({
-                    "source": f"article_{article.id}",
-                    "target": f"kp_{kp.id}",
-                    "type": "covers"
-                })
+        # Add edges between articles and knowledge points
+        for article_id, kp_id in db.query(
+            article_knowledge_points.c.article_id,
+            article_knowledge_points.c.knowledge_point_id,
+        ).all():
+            edges.append({
+                "source": f"article_{article_id}",
+                "target": f"kp_{kp_id}",
+                "type": "covers"
+            })
         
         return {
             "nodes": nodes,
