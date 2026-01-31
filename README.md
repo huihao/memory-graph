@@ -105,7 +105,9 @@ The frontend will be available at `http://localhost:3000`
 
 ### 5. Notion / Obsidian / Neo4j Integration
 
-See [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md) for a practical, layered integration design that positions Neo4j as the source of truth, Obsidian as the writing surface, and Notion as the execution dashboard.
+See [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md) for a
+practical, layered integration design that positions Neo4j as the source of truth, Obsidian as the
+writing surface, and Notion as the execution dashboard.
 
 ## 🔧 API Endpoints
 

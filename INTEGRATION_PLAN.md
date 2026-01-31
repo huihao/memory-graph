@@ -1,4 +1,14 @@
-# Notion · Obsidian · Neo4j 联动方案
+# Notion · Obsidian · Neo4j Integration Plan (联动方案)
+
+## English Summary
+
+- Neo4j is the source of truth for the bookmark knowledge graph.
+- Obsidian is the writing/thinking surface that refines concepts and links.
+- Notion tracks structured work like projects, tasks, and reading status.
+- Sync is intentionally lightweight with clear conflict rules; avoid full bidirectional mirroring.
+- Embeddings live in a vector store (FAISS/Milvus) keyed by Neo4j node IDs.
+
+## 中文详细说明
 
 目标：把书签知识图谱作为系统核心（Neo4j），让 Obsidian 承担思考写作、Notion 承担结构化运营，三者分层协作而非全量同步。
 
@@ -39,7 +49,7 @@
        │
        │ Graph API
        ▼
-┌──────────────┐     双向轻同步     ┌──────────────┐
+┌──────────────┐   轻同步经 Neo4j   ┌──────────────┐
 │   Obsidian   │◄────────────────►│    Notion     │
 │ (Markdown)   │                   │ (Database)   │
 └──────────────┘                   └──────────────┘
@@ -164,11 +174,12 @@ Notion 仅保存：
 
 **场景：收藏一个新链接**
 
-Chrome → Ingest → Neo4j  
-                     │  
-        ┌────────────┴────────────┐  
-        ▼                         ▼  
-   Notion Inbox             Obsidian Draft
+Chrome → Ingest → Neo4j → Notion Inbox  
+Chrome → Ingest → Neo4j → Obsidian Drafts
+
+Drafts 指 Obsidian vault 的 drafts/ 目录。
+
+默认情况下两条路径都会执行（同时进入 Notion Inbox 与 Obsidian Draft）；如需精简，可在同步服务中关闭其中一条路径。
 
 **场景：写深度理解笔记**
 
@@ -209,6 +220,8 @@ sync/
 | Vector | FAISS / Milvus |
 | LLM | GPT / Claude |
 | Frontend | Obsidian / Notion |
+
+Embedding 由 Ingest Pipeline 生成，向量存放在独立的向量库（FAISS/Milvus），并通过 Neo4j 节点 ID 建立索引引用；查询时由 Neo4j 负责结构关系，向量库负责相似度检索。
 
 ## 8. 常见错误（避坑）
 
