@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import uvicorn
 
@@ -97,24 +97,34 @@ async def get_stats(db: Session = Depends(get_db)):
     This endpoint consolidates statistics that would otherwise require
     multiple API calls, improving frontend performance.
     """
+    from database import article_domains
+    
     total_articles = db.query(DBArticle).count()
     total_domains = db.query(DBDomain).count()
     total_knowledge_points = db.query(DBKnowledgePoint).count()
     
     # Get recent articles count (last 7 days)
-    from datetime import timedelta
     week_ago = datetime.utcnow() - timedelta(days=7)
     recent_articles = db.query(DBArticle).filter(DBArticle.created_at >= week_ago).count()
     
-    # Get top domains by article count
-    top_domains = []
-    domains = db.query(DBDomain).options(joinedload(DBDomain.articles)).all()
-    for domain in sorted(domains, key=lambda d: len(d.articles), reverse=True)[:5]:
-        top_domains.append({
-            "id": domain.id,
-            "name": domain.name,
-            "article_count": len(domain.articles)
-        })
+    # Get top 5 domains by article count using efficient SQL query
+    top_domain_query = (
+        db.query(
+            DBDomain.id,
+            DBDomain.name,
+            func.count(article_domains.c.article_id).label('article_count')
+        )
+        .outerjoin(article_domains, DBDomain.id == article_domains.c.domain_id)
+        .group_by(DBDomain.id, DBDomain.name)
+        .order_by(func.count(article_domains.c.article_id).desc())
+        .limit(5)
+        .all()
+    )
+    
+    top_domains = [
+        {"id": row.id, "name": row.name, "article_count": row.article_count}
+        for row in top_domain_query
+    ]
     
     return {
         "total_articles": total_articles,
