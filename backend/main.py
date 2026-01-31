@@ -98,7 +98,14 @@ async def analyze_url(url: str, db: Session = Depends(get_db)):
     extracted = await content_extractor.extract_content(url)
     
     # Analyze with LLM
-    analysis = await llm_service.analyze_article(extracted["title"], extracted["content"])
+    existing_domains = [domain.name for domain in db.query(DBDomain).all()]
+    existing_kps = [kp.name for kp in db.query(DBKnowledgePoint).all()]
+    analysis = await llm_service.analyze_article(
+        extracted["title"],
+        extracted["content"],
+        existing_domains=existing_domains,
+        existing_knowledge_points=existing_kps
+    )
     
     # Create article
     article = ArticleCreate(
@@ -171,9 +178,19 @@ async def get_related_articles(article_id: int, db: Session = Depends(get_db)):
     }
 
 @app.get("/api/knowledge-graph")
-async def get_knowledge_graph(db: Session = Depends(get_db)):
+async def get_knowledge_graph(
+    domain_id: int = None,
+    knowledge_point_id: int = None,
+    db: Session = Depends(get_db)
+):
     """Get knowledge graph data for visualization"""
-    return knowledge_graph_service.get_knowledge_graph_data(db)
+    if domain_id and knowledge_point_id:
+        raise HTTPException(status_code=400, detail="Provide only one filter at a time")
+    return knowledge_graph_service.get_knowledge_graph_data(
+        db,
+        domain_id=domain_id,
+        knowledge_point_id=knowledge_point_id
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

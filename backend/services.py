@@ -13,7 +13,13 @@ class LLMService:
         if self.openai_api_key:
             openai.api_key = self.openai_api_key
     
-    async def analyze_article(self, title: str, content: str) -> Dict[str, Any]:
+    async def analyze_article(
+        self,
+        title: str,
+        content: str,
+        existing_domains: List[str] = None,
+        existing_knowledge_points: List[str] = None,
+    ) -> Dict[str, Any]:
         """
         Analyze article content to determine domains and knowledge points
         
@@ -24,15 +30,21 @@ class LLMService:
         Returns:
             Dictionary with 'domains' and 'knowledge_points' lists
         """
+        domain_hint = ", ".join(existing_domains or [])
+        knowledge_point_hint = ", ".join(existing_knowledge_points or [])
         prompt = f"""
         Analyze the following article and extract:
         1. The main domain(s) or field(s) it belongs to (e.g., "Machine Learning", "Web Development", "Cloud Computing")
         2. Key knowledge points or concepts covered in the article
+        3. Prefer using existing domains/knowledge points when relevant to keep taxonomy consistent.
         
         Article Title: {title}
         
         Article Content (first 2000 chars):
         {content[:2000]}
+
+        Existing Domains: [{domain_hint}]
+        Existing Knowledge Points: [{knowledge_point_hint}]
         
         Please respond in JSON format:
         {{
@@ -46,7 +58,7 @@ class LLMService:
                 response = await self._call_openai(prompt)
             else:
                 # Fallback to simple keyword-based analysis
-                response = self._simple_analysis(title, content)
+                response = self._simple_analysis(title, content, existing_domains, existing_knowledge_points)
             
             return response
         except Exception as e:
@@ -85,7 +97,13 @@ class LLMService:
             print(f"OpenAI API error: {e}")
             return {"domains": ["General"], "knowledge_points": []}
     
-    def _simple_analysis(self, title: str, content: str) -> Dict[str, Any]:
+    def _simple_analysis(
+        self,
+        title: str,
+        content: str,
+        existing_domains: List[str] = None,
+        existing_knowledge_points: List[str] = None,
+    ) -> Dict[str, Any]:
         """Simple keyword-based analysis as fallback"""
         # Keywords mapping to domains
         domain_keywords = {
@@ -99,18 +117,27 @@ class LLMService:
         
         text = (title + " " + content).lower()
         detected_domains = []
+        detected_knowledge_points = []
         
         for domain, keywords in domain_keywords.items():
             if any(keyword in text for keyword in keywords):
                 detected_domains.append(domain)
+
+        for domain in existing_domains or []:
+            if domain.lower() in text:
+                detected_domains.append(domain)
+
+        for kp in existing_knowledge_points or []:
+            if kp.lower() in text:
+                detected_knowledge_points.append(kp)
         
         if not detected_domains:
             detected_domains = ["General"]
         
         # Extract key phrases as knowledge points (simplified)
         words = text.split()
-        knowledge_points = []
-        
+        knowledge_points = detected_knowledge_points
+
         return {
             "domains": detected_domains[:3],  # Limit to top 3 domains
             "knowledge_points": knowledge_points[:5]  # Limit to top 5 points
