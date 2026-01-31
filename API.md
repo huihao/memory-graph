@@ -35,6 +35,45 @@ Get API information.
 }
 ```
 
+#### GET /api/health
+
+Health check endpoint for monitoring and deployment.
+
+**Response**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-31T10:00:00.000Z",
+  "version": "1.0.0"
+}
+```
+
+#### GET /api/stats
+
+Get aggregate statistics in a single API call.
+
+**Response**
+```json
+{
+  "total_articles": 150,
+  "total_domains": 12,
+  "total_knowledge_points": 45,
+  "recent_articles": 8,
+  "top_domains": [
+    {
+      "id": 1,
+      "name": "Web Development",
+      "article_count": 35
+    },
+    {
+      "id": 2,
+      "name": "Machine Learning",
+      "article_count": 28
+    }
+  ]
+}
+```
+
 ---
 
 ### Articles
@@ -128,6 +167,43 @@ Get a specific article by ID.
   "url": "https://example.com/article",
   "title": "Article Title",
   ...
+}
+```
+
+#### GET /api/articles/search
+
+Search articles with filters. This endpoint provides server-side search functionality, which is more efficient than client-side filtering for large datasets.
+
+**Query Parameters**
+- `q` (string, optional): Search query for title, URL, or content
+- `domain_id` (integer, optional): Filter by domain ID
+- `knowledge_point_id` (integer, optional): Filter by knowledge point ID
+- `skip` (integer, optional): Number of articles to skip (default: 0)
+- `limit` (integer, optional): Maximum number of articles to return (default: 20, max: 100)
+
+**Response**
+```json
+{
+  "articles": [...],
+  "total": 45,
+  "skip": 0,
+  "limit": 20,
+  "has_more": true
+}
+```
+
+#### DELETE /api/articles/{article_id}
+
+Delete an article and its associations. The domains and knowledge points themselves are preserved.
+
+**Path Parameters**
+- `article_id` (integer): Article ID
+
+**Response**
+```json
+{
+  "status": "deleted",
+  "article_id": 1
 }
 ```
 

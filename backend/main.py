@@ -1,12 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, func
 from typing import List, Optional
+from datetime import datetime, timedelta
 import os
 import uvicorn
 
 from database import init_db, get_db, Article as DBArticle, Domain as DBDomain, KnowledgePoint as DBKnowledgePoint
-from schemas import Article, ArticleCreate, ArticleList, Domain, KnowledgePoint
+from schemas import Article, ArticleCreate, ArticleList, Domain, KnowledgePoint, Stats, SearchResult
 from services import LLMService, ContentExtractor
 from tasks import MarkdownConverter, KnowledgeGraphService
 import logging
@@ -79,6 +81,59 @@ async def shutdown_event():
 async def root():
     return {"message": "Memory Graph API", "version": "1.0.0"}
 
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for monitoring and deployment"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
+    }
+
+@app.get("/api/stats", response_model=Stats)
+async def get_stats(db: Session = Depends(get_db)):
+    """Get aggregate statistics in a single API call
+    
+    This endpoint consolidates statistics that would otherwise require
+    multiple API calls, improving frontend performance.
+    """
+    from database import article_domains
+    
+    total_articles = db.query(DBArticle).count()
+    total_domains = db.query(DBDomain).count()
+    total_knowledge_points = db.query(DBKnowledgePoint).count()
+    
+    # Get recent articles count (last 7 days)
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    recent_articles = db.query(DBArticle).filter(DBArticle.created_at >= week_ago).count()
+    
+    # Get top 5 domains by article count using efficient SQL query
+    top_domain_query = (
+        db.query(
+            DBDomain.id,
+            DBDomain.name,
+            func.count(article_domains.c.article_id).label('article_count')
+        )
+        .outerjoin(article_domains, DBDomain.id == article_domains.c.domain_id)
+        .group_by(DBDomain.id, DBDomain.name)
+        .order_by(func.count(article_domains.c.article_id).desc())
+        .limit(5)
+        .all()
+    )
+    
+    top_domains = [
+        {"id": row.id, "name": row.name, "article_count": row.article_count}
+        for row in top_domain_query
+    ]
+    
+    return {
+        "total_articles": total_articles,
+        "total_domains": total_domains,
+        "total_knowledge_points": total_knowledge_points,
+        "recent_articles": recent_articles,
+        "top_domains": top_domains
+    }
+
 @app.post("/api/articles", response_model=Article)
 async def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
     """Create a new article with domains and knowledge points"""
@@ -120,18 +175,98 @@ async def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
 
 @app.get("/api/articles", response_model=ArticleList)
 async def get_articles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all articles with pagination"""
-    articles = db.query(DBArticle).offset(skip).limit(limit).all()
+    """Get all articles with pagination and eager loading"""
+    articles = db.query(DBArticle).options(
+        joinedload(DBArticle.domains),
+        joinedload(DBArticle.knowledge_points)
+    ).offset(skip).limit(limit).all()
     total = db.query(DBArticle).count()
     return {"articles": articles, "total": total}
 
+@app.get("/api/articles/search", response_model=SearchResult)
+async def search_articles(
+    q: Optional[str] = Query(None, description="Search query for title or URL"),
+    domain_id: Optional[int] = Query(None, description="Filter by domain ID"),
+    knowledge_point_id: Optional[int] = Query(None, description="Filter by knowledge point ID"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Search articles with filters
+    
+    This endpoint provides server-side search functionality, which is more
+    efficient than client-side filtering for large datasets.
+    """
+    query = db.query(DBArticle).options(
+        joinedload(DBArticle.domains),
+        joinedload(DBArticle.knowledge_points)
+    )
+    
+    # Apply text search filter
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                DBArticle.title.ilike(search_term),
+                DBArticle.url.ilike(search_term),
+                DBArticle.content.ilike(search_term)
+            )
+        )
+    
+    # Apply domain filter
+    if domain_id:
+        query = query.filter(DBArticle.domains.any(DBDomain.id == domain_id))
+    
+    # Apply knowledge point filter
+    if knowledge_point_id:
+        query = query.filter(DBArticle.knowledge_points.any(DBKnowledgePoint.id == knowledge_point_id))
+    
+    # Get total count before pagination
+    total = query.count()
+    
+    # Apply pagination
+    articles = query.offset(skip).limit(limit).all()
+    
+    return {
+        "articles": articles,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_more": (skip + limit) < total
+    }
+
 @app.get("/api/articles/{article_id}", response_model=Article)
 async def get_article(article_id: int, db: Session = Depends(get_db)):
-    """Get a specific article by ID"""
-    article = db.query(DBArticle).filter(DBArticle.id == article_id).first()
+    """Get a specific article by ID with eager loading"""
+    article = db.query(DBArticle).options(
+        joinedload(DBArticle.domains),
+        joinedload(DBArticle.knowledge_points)
+    ).filter(DBArticle.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
+
+@app.delete("/api/articles/{article_id}")
+async def delete_article(article_id: int, db: Session = Depends(get_db)):
+    """Delete an article and its associations
+    
+    This endpoint removes an article from the database along with its
+    relationships to domains and knowledge points. The domains and
+    knowledge points themselves are preserved.
+    """
+    article = db.query(DBArticle).filter(DBArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    # Clear relationships (SQLAlchemy handles the association tables)
+    article.domains = []
+    article.knowledge_points = []
+    
+    # Delete the article
+    db.delete(article)
+    db.commit()
+    
+    return {"status": "deleted", "article_id": article_id}
 
 @app.post("/api/articles/analyze-url")
 async def analyze_url(url: str, db: Session = Depends(get_db)):
