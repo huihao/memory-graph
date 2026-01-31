@@ -261,6 +261,10 @@ Convert all articles to Obsidian markdown format.
 
 Get knowledge graph data for visualization.
 
+**Query Parameters**
+- `domain_id` (integer, optional): Focus graph on a specific domain
+- `knowledge_point_id` (integer, optional): Focus graph on a specific knowledge point
+
 **Response**
 ```json
 {
@@ -269,17 +273,23 @@ Get knowledge graph data for visualization.
       "id": "article_1",
       "label": "Article Title",
       "type": "article",
-      "url": "https://example.com/article"
+      "url": "https://example.com/article",
+      "icon": "📄",
+      "size": 10
     },
     {
       "id": "domain_1",
       "label": "Web Development",
-      "type": "domain"
+      "type": "domain",
+      "icon": "🧭",
+      "size": 12
     },
     {
       "id": "kp_1",
       "label": "React Hooks",
-      "type": "knowledge_point"
+      "type": "knowledge_point",
+      "icon": "💡",
+      "size": 12
     }
   ],
   "edges": [
@@ -292,8 +302,20 @@ Get knowledge graph data for visualization.
       "source": "article_1",
       "target": "kp_1",
       "type": "covers"
+    },
+    {
+      "source": "article_1",
+      "target": "article_2",
+      "type": "related_articles",
+      "shared_domains": ["Web Development"],
+      "shared_knowledge_points": ["React Hooks"],
+      "weight": 2
     }
-  ]
+  ],
+  "context": {
+    "domain": "Web Development",
+    "knowledge_point": null
+  }
 }
 ```
 

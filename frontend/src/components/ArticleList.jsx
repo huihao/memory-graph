@@ -195,7 +195,7 @@ function ArticleDetail({ article, apiUrl }) {
               <h4 style={{ fontSize: '14px', color: '#666' }}>Same Domain</h4>
               {related.by_domain.map(rel => (
                 <div key={rel.id} style={{ padding: '5px 0' }}>
-                  • {rel.title}
+                  • <a href={rel.url} target="_blank" rel="noopener noreferrer">{rel.title}</a>
                 </div>
               ))}
             </div>
@@ -205,7 +205,7 @@ function ArticleDetail({ article, apiUrl }) {
               <h4 style={{ fontSize: '14px', color: '#666' }}>Same Knowledge Points</h4>
               {related.by_knowledge_point.map(rel => (
                 <div key={rel.id} style={{ padding: '5px 0' }}>
-                  • {rel.title}
+                  • <a href={rel.url} target="_blank" rel="noopener noreferrer">{rel.title}</a>
                 </div>
               ))}
             </div>

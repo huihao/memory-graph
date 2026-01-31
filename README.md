@@ -7,7 +7,7 @@ A comprehensive system for managing and visualizing bookmarked articles using br
 - **Browser Extension**: Automatically traverse bookmarks, extract content, and classify articles using LLM
 - **Backend API**: Store articles with domains and knowledge points, convert to Obsidian markdown
 - **Frontend Interface**: View, search, and visualize article connections
-- **Knowledge Graph**: Visualize connections between articles based on domains and knowledge points
+- **Knowledge Graph**: Visualize connections between articles based on domains and knowledge points with pan/zoom filtering
 
 ## 🏗️ Architecture
 
@@ -29,7 +29,7 @@ The system consists of three main components:
 3. **Frontend Interface** (React + Vite)
    - Dashboard with statistics
    - Article list with search and filtering
-   - Knowledge graph visualization
+    - Knowledge graph visualization with domain/knowledge-point focus
    - Markdown export management
 
 ## 🚀 Quick Start
@@ -100,7 +100,8 @@ The frontend will be available at `http://localhost:3000`
 
 1. Navigate to "Knowledge Graph" in the frontend
 2. View connections between articles, domains, and knowledge points
-3. Articles in the same domain or with same knowledge points are connected
+3. Filter by a specific domain or knowledge point to focus the graph
+4. Pan/zoom the canvas and click article nodes to open their URLs
 
 ## 🔧 API Endpoints
 

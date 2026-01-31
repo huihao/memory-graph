@@ -175,6 +175,118 @@ code {
   overflow: hidden;
 }
 
+.graph-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 15px;
+  align-items: flex-end;
+}
+
+.graph-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.graph-filter label {
+  font-size: 12px;
+  color: #555;
+}
+
+.graph-filter select {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.graph-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.graph-actions button {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.graph-context {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f1f6ff;
+  border-radius: 6px;
+  color: #2f80ed;
+  font-size: 13px;
+}
+
+.graph-filter-note {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.graph-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #444;
+}
+
+.legend-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+}
+
+.graph-edge-details {
+  margin-top: 20px;
+}
+
+.edge-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.edge-tags button {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #f1f3f5;
+  color: #444;
+}
+
+.edge-detail-card {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+  font-size: 13px;
+  color: #555;
+}
+
+.edge-type {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #2f80ed;
+}
+
 button {
   padding: 10px 20px;
   background: #007bff;
