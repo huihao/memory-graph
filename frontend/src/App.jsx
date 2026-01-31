@@ -20,19 +20,32 @@ function App() {
 
   const loadStats = async () => {
     try {
-      const [articlesRes, domainsRes, kpRes] = await Promise.all([
-        axios.get(`${API_URL}/articles`),
-        axios.get(`${API_URL}/domains`),
-        axios.get(`${API_URL}/knowledge-points`)
-      ])
+      // Use the optimized stats endpoint instead of multiple requests
+      const response = await axios.get(`${API_URL}/stats`)
       
       setStats({
-        totalArticles: articlesRes.data.total,
-        totalDomains: domainsRes.data.length,
-        totalKnowledgePoints: kpRes.data.length
+        totalArticles: response.data.total_articles,
+        totalDomains: response.data.total_domains,
+        totalKnowledgePoints: response.data.total_knowledge_points
       })
     } catch (error) {
       console.error('Error loading stats:', error)
+      // Fallback to individual requests if stats endpoint fails
+      try {
+        const [articlesRes, domainsRes, kpRes] = await Promise.all([
+          axios.get(`${API_URL}/articles`),
+          axios.get(`${API_URL}/domains`),
+          axios.get(`${API_URL}/knowledge-points`)
+        ])
+        
+        setStats({
+          totalArticles: articlesRes.data.total,
+          totalDomains: domainsRes.data.length,
+          totalKnowledgePoints: kpRes.data.length
+        })
+      } catch (fallbackError) {
+        console.error('Error loading stats (fallback):', fallbackError)
+      }
     }
   }
 

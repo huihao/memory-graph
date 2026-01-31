@@ -56,3 +56,25 @@ class Article(ArticleBase):
 class ArticleList(BaseModel):
     articles: List[Article]
     total: int
+
+class SearchResult(BaseModel):
+    """Response model for search results with pagination info"""
+    articles: List[Article]
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
+
+class DomainStats(BaseModel):
+    """Domain statistics for the stats endpoint"""
+    id: int
+    name: str
+    article_count: int
+
+class Stats(BaseModel):
+    """Aggregate statistics response model"""
+    total_articles: int
+    total_domains: int
+    total_knowledge_points: int
+    recent_articles: int
+    top_domains: List[DomainStats]
