@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import ArticleList from './components/ArticleList'
-import ArticleDetail from './components/ArticleDetail'
 import KnowledgeGraph from './components/KnowledgeGraph'
 import Dashboard from './components/Dashboard'
 import axios from 'axios'
