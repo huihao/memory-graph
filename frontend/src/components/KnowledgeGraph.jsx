@@ -302,7 +302,7 @@ function KnowledgeGraph({ apiUrl }) {
         {Object.entries(TYPE_STYLES).map(([key, style]) => (
           <div key={key} className="legend-item">
             <span className="legend-icon" style={{ background: style.color }}>{style.icon}</span>
-            {key.replace('_', ' ')}
+            {key.replace(/_/g, ' ')}
           </div>
         ))}
       </div>

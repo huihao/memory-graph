@@ -30,8 +30,10 @@ class LLMService:
         Returns:
             Dictionary with 'domains' and 'knowledge_points' lists
         """
-        domain_hint = ", ".join(existing_domains or [])
-        knowledge_point_hint = ", ".join(existing_knowledge_points or [])
+        existing_domains = existing_domains or []
+        existing_knowledge_points = existing_knowledge_points or []
+        domain_hint = ", ".join(existing_domains)
+        knowledge_point_hint = ", ".join(existing_knowledge_points)
         prompt = f"""
         Analyze the following article and extract:
         1. The main domain(s) or field(s) it belongs to (e.g., "Machine Learning", "Web Development", "Cloud Computing")

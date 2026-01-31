@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import uvicorn
 
 from database import init_db, get_db, Article as DBArticle, Domain as DBDomain, KnowledgePoint as DBKnowledgePoint
@@ -179,8 +179,8 @@ async def get_related_articles(article_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/knowledge-graph")
 async def get_knowledge_graph(
-    domain_id: int = None,
-    knowledge_point_id: int = None,
+    domain_id: Optional[int] = None,
+    knowledge_point_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """Get knowledge graph data for visualization"""
