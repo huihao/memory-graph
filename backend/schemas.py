@@ -45,6 +45,8 @@ class Article(ArticleBase):
     created_at: datetime
     updated_at: datetime
     markdown_path: Optional[str] = None
+    neo4j_id: Optional[str] = None
+    notion_page_id: Optional[str] = None
     domains: List[Domain] = []
     knowledge_points: List[KnowledgePoint] = []
     

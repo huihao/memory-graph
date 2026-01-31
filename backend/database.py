@@ -32,6 +32,8 @@ class Article(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     markdown_path = Column(String)  # Path to generated Obsidian markdown file
+    neo4j_id = Column(String, unique=True)  # Neo4j node ID
+    notion_page_id = Column(String, unique=True)  # Notion page ID
     
     # Relationships
     domains = relationship('Domain', secondary=article_domains, back_populates='articles')

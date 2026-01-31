@@ -65,3 +65,4 @@ logs/
 # Obsidian exports
 exports/
 obsidian-vault/
+/tmp/obsidian-vault/

@@ -31,6 +31,20 @@ def test_imports():
     except ImportError as e:
         print(f"✗ Pydantic import failed: {e}")
         return False
+
+    try:
+        import neo4j
+        print("✓ Neo4j driver imported successfully")
+    except ImportError as e:
+        print(f"✗ Neo4j driver import failed: {e}")
+        return False
+
+    try:
+        import requests
+        print("✓ Requests imported successfully")
+    except ImportError as e:
+        print(f"✗ Requests import failed: {e}")
+        return False
     
     return True
 

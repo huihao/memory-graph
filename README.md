@@ -162,6 +162,9 @@ memory-graph/
 ### Backend
 
 - `OPENAI_API_KEY` - OpenAI API key for enhanced article analysis (optional)
+- `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` - Neo4j connection settings (optional)
+- `NOTION_API_KEY` / `NOTION_INBOX_DB_ID` - Notion integration settings (optional)
+- `OBSIDIAN_VAULT_PATH` - Obsidian vault path for drafts export (optional)
 
 If not provided, the system will use simple keyword-based analysis as fallback.
 

@@ -2,14 +2,20 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import os
 import uvicorn
 
 from database import init_db, get_db, Article as DBArticle, Domain as DBDomain, KnowledgePoint as DBKnowledgePoint
 from schemas import Article, ArticleCreate, ArticleList, Domain, KnowledgePoint
 from services import LLMService, ContentExtractor
 from tasks import MarkdownConverter, KnowledgeGraphService
+import logging
+from integration.neo4j_sync import Neo4jSync
+from integration.notion_sync import NotionSync
+from integration.obsidian_sync import ObsidianSync
 
 app = FastAPI(title="Memory Graph API", version="1.0.0")
+logger = logging.getLogger(__name__)
 
 # CORS middleware
 app.add_middleware(
@@ -25,10 +31,49 @@ llm_service = LLMService()
 content_extractor = ContentExtractor()
 markdown_converter = MarkdownConverter()
 knowledge_graph_service = KnowledgeGraphService()
+neo4j_sync = None
+notion_sync = None
+obsidian_sync = None
 
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    global neo4j_sync, notion_sync, obsidian_sync
+    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_user = os.getenv("NEO4J_USER", "neo4j")
+    neo4j_password = os.getenv("NEO4J_PASSWORD", "")
+    notion_api_key = os.getenv("NOTION_API_KEY", "")
+    notion_inbox_db_id = os.getenv("NOTION_INBOX_DB_ID", "")
+    obsidian_vault_path = os.getenv("OBSIDIAN_VAULT_PATH", "")
+    try:
+        neo4j_sync = Neo4jSync(
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
+        )
+    except ValueError as exc:
+        logger.warning("Neo4j integration disabled: %s", exc)
+        neo4j_sync = None
+
+    notion_sync = None
+    if notion_api_key and notion_inbox_db_id:
+        notion_sync = NotionSync(
+            notion_api_key,
+            notion_inbox_db_id,
+        )
+    else:
+        logger.info("Notion integration disabled: missing configuration.")
+
+    obsidian_sync = None
+    if obsidian_vault_path:
+        obsidian_sync = ObsidianSync(obsidian_vault_path)
+    else:
+        logger.info("Obsidian integration disabled: missing vault path.")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if neo4j_sync:
+        neo4j_sync.close()
 
 @app.get("/")
 async def root():
@@ -191,6 +236,71 @@ async def get_knowledge_graph(
         domain_id=domain_id,
         knowledge_point_id=knowledge_point_id
     )
+
+@app.post("/api/sync/full-pipeline")
+async def full_sync_pipeline(article_id: int, db: Session = Depends(get_db)):
+    """Sync an article to Neo4j, Notion, and Obsidian Drafts.
+
+    Args:
+        article_id: Article ID to sync.
+
+    Returns:
+        Sync status and updated integration identifiers.
+
+    Raises:
+        HTTPException: 404 if the article does not exist.
+    """
+    article = db.query(DBArticle).filter(DBArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    article_payload = {
+        "url": article.url,
+        "title": article.title,
+        "markdown_path": article.markdown_path,
+        "notion_page_id": article.notion_page_id,
+    }
+    neo4j_id = article.neo4j_id
+    if neo4j_sync:
+        neo4j_id = neo4j_sync.sync_article(article_payload, article.neo4j_id)
+
+    notion_page_id = None
+    if notion_sync:
+        try:
+            notion_page_id = notion_sync.push_bookmark_inbox(
+                {
+                    "url": article.url,
+                    "title": article.title,
+                    "domains": [domain.name for domain in article.domains],
+                },
+                neo4j_id,
+            )
+        except RuntimeError as exc:
+            logger.error("Notion sync failed: %s", exc)
+
+    markdown_path = None
+    if obsidian_sync:
+        try:
+            markdown_path = obsidian_sync.export_article(article, db)
+        except Exception as exc:
+            logger.error("Obsidian export failed: %s", exc)
+
+    if neo4j_id:
+        article.neo4j_id = neo4j_id
+    if notion_page_id:
+        article.notion_page_id = notion_page_id
+    if markdown_path:
+        article.markdown_path = markdown_path
+    db.commit()
+    db.refresh(article)
+
+    return {
+        "status": "synced",
+        "article_id": article.id,
+        "neo4j_id": article.neo4j_id,
+        "notion_page_id": article.notion_page_id,
+        "markdown_path": article.markdown_path,
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -3,7 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Iterable, Tuple, Set
 from sqlalchemy.orm import Session
-from database import Article, Domain, KnowledgePoint
+try:
+    from database import Article, Domain, KnowledgePoint
+except ImportError:  # pragma: no cover - fallback for package imports
+    from backend.database import Article, Domain, KnowledgePoint
 
 MAX_TITLE_LENGTH = 100
 MAX_RELATED_ARTICLES = 10
@@ -13,7 +16,7 @@ class MarkdownConverter:
     
     def __init__(self, export_dir: str = "./exports"):
         self.export_dir = Path(export_dir)
-        self.export_dir.mkdir(exist_ok=True)
+        self.export_dir.mkdir(parents=True, exist_ok=True)
     
     def convert_article_to_markdown(self, article: Article, db: Session) -> str:
         """
@@ -87,6 +90,10 @@ class MarkdownConverter:
         lines.append(f"url: {article.url}")
         lines.append(f"created: {article.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append(f"updated: {article.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
+        if article.neo4j_id:
+            lines.append(f"neo4j_id: {article.neo4j_id}")
+        if article.notion_page_id:
+            lines.append(f"notion_page_id: {article.notion_page_id}")
         
         # Tags for domains
         if article.domains:

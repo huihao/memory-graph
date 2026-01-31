@@ -255,6 +255,28 @@ Convert all articles to Obsidian markdown format.
 
 ---
 
+### Integration
+
+#### POST /api/sync/full-pipeline
+
+Sync a processed article to Neo4j (truth source), Notion Inbox, and Obsidian drafts.
+
+**Query Parameters**
+- `article_id` (integer): Article ID to sync
+
+**Response**
+```json
+{
+  "status": "synced",
+  "article_id": 1,
+  "neo4j_id": "bookmark-1",
+  "notion_page_id": "abc-123",
+  "markdown_path": "/path/to/vault/drafts/Article-Title.md"
+}
+```
+
+---
+
 ### Knowledge Graph
 
 #### GET /api/knowledge-graph
