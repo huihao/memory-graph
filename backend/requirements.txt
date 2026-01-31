@@ -11,3 +11,9 @@ requests==2.32.3
 celery==5.3.4
 redis==5.0.1
 python-multipart==0.0.22
+
+# Testing dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
