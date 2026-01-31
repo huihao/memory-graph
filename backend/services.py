@@ -119,6 +119,51 @@ class LLMService:
 class ContentExtractor:
     """Service for extracting content from web pages"""
     
+    ALLOWED_SCHEMES = {'http', 'https'}
+    BLOCKED_HOSTS = {'localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254'}  # Block local and metadata IPs
+    
+    def _validate_url(self, url: str) -> bool:
+        """
+        Validate URL to prevent SSRF attacks
+        
+        Args:
+            url: The URL to validate
+            
+        Returns:
+            True if URL is safe, False otherwise
+        """
+        try:
+            from urllib.parse import urlparse
+            import ipaddress
+            
+            parsed = urlparse(url)
+            
+            # Check scheme
+            if parsed.scheme not in self.ALLOWED_SCHEMES:
+                return False
+            
+            # Check for blocked hosts
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+            
+            # Block localhost variations
+            if hostname.lower() in self.BLOCKED_HOSTS:
+                return False
+            
+            # Block private IP ranges
+            try:
+                ip = ipaddress.ip_address(hostname)
+                if ip.is_private or ip.is_loopback or ip.is_link_local:
+                    return False
+            except ValueError:
+                # Not an IP address, hostname is fine
+                pass
+            
+            return True
+        except Exception:
+            return False
+    
     async def extract_content(self, url: str) -> Dict[str, str]:
         """
         Extract title and content from a URL
@@ -129,9 +174,16 @@ class ContentExtractor:
         Returns:
             Dictionary with 'title' and 'content'
         """
+        # Validate URL to prevent SSRF
+        if not self._validate_url(url):
+            return {
+                "title": "Invalid URL",
+                "content": "URL validation failed. Only http/https URLs to public hosts are allowed."
+            }
+        
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=30) as response:
+                async with session.get(url, timeout=30, allow_redirects=True, max_redirects=5) as response:
                     html = await response.text()
                     soup = BeautifulSoup(html, 'html.parser')
                     
