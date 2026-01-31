@@ -158,11 +158,13 @@ export const useCanvasStore = create(
     
     pan: (dx, dy) => {
       const { viewport } = get()
+      // When mouse moves right (positive dx), we want to see content on the right
+      // which means offsetX should increase (we're looking at higher world x coordinates)
       set({
         viewport: {
           ...viewport,
-          offsetX: viewport.offsetX - dx / viewport.scale,
-          offsetY: viewport.offsetY - dy / viewport.scale,
+          offsetX: viewport.offsetX + dx / viewport.scale,
+          offsetY: viewport.offsetY + dy / viewport.scale,
         }
       })
     },

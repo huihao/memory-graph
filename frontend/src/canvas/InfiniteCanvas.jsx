@@ -282,10 +282,11 @@ export function InfiniteCanvas({
       updates.set(draggedNodeId, { x: worldPos.x, y: worldPos.y })
       updateNodes(updates)
     } else if (isPanning && dragStart) {
-      // Pan canvas
+      // Pan canvas - positive dx means mouse moved right, should shift viewport left
+      // (to reveal content that was on the right)
       const dx = pos.x - dragStart.x
       const dy = pos.y - dragStart.y
-      pan(-dx, -dy)
+      pan(dx, dy)
       useCanvasStore.setState({ dragStart: { x: pos.x, y: pos.y } })
     } else {
       // Hover detection
@@ -368,6 +369,7 @@ export function InfiniteCanvas({
         event.preventDefault()
         break
       case 'f':
+      case 'F':
         zoomToFit(80)
         event.preventDefault()
         break
