@@ -321,6 +321,10 @@ Get knowledge graph data for visualization.
 
 ---
 
+### Integration Plan
+
+The Notion / Obsidian / Neo4j integration architecture is documented in [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md). It describes data ownership, sync rules, and the API surface you will eventually expose for syncing and conflict resolution.
+
 ## Error Responses
 
 All endpoints may return error responses in the following format:
