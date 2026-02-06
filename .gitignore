@@ -23,6 +23,14 @@ venv/
 env/
 ENV/
 
+# Testing/Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
 # Node
 node_modules/
 npm-debug.log*
